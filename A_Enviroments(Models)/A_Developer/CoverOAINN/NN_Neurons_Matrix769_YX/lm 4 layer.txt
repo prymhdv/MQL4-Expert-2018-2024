@@ -1,0 +1,262 @@
+
+void COptimizer_Levenberg_Marquardt::TrainMatrix()
+{         if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_0_");//
+          //----------------------------------------
+          uint n0 = DataSetInput[0].Total();
+          uint n1 = 8;
+          uint n2 = 4;
+          uint n3 = 1;
+          layers.clear(); //--structure of network--
+          layers << DataSetInput[0].Total(); //---inputs--- === DataSetInput.shape(1);
+          layers << n1;
+          layers << n2;
+          layers << n3;
+          if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_1_");//
+          //--------------------------------------------------------------------------------------------------
+          layersWeghits1 = new CMatirx_Vector<double>(layers[1], layers[0]); layersWeghits1._vals.clear();
+          layersWeghits2 = new CMatirx_Vector<double>(layers[2], layers[1]); layersWeghits2._vals.clear();
+          layersWeghits3 = new CMatirx_Vector<double>(layers[3], layers[2]); layersWeghits3._vals.clear(); //______________BIG ERROR_______MUST CLEAR VALS BEFORE________Print(" InRange: ", val);
+          for(uint i = 0; i < layers[1]*layers[0]; i++)  { double val = InRange( 0, RAND_MAX_, -1, 1, rand()); layersWeghits1._vals << val;} if(IsDebugPrintLevenbergExe) {Print(" W_All",  "   layersWeghits1.getAt(0, 0): ", layersWeghits1.getAt(0, 0), "  InRange: ", InRange( 0, RAND_MAX_, -1, 1, rand()));}
+          for(uint i = 0; i < layers[2]*layers[1]; i++)  { double val = InRange( 0, RAND_MAX_, -1, 1, rand()); layersWeghits2._vals << val;} if(IsDebugPrintLevenbergExe) {Print(" W_All",  "   layersWeghits2.getAt(0, 0): ", layersWeghits2.getAt(0, 0), "  InRange: ", InRange( 0, RAND_MAX_, -1, 1, rand()) );}
+          for(uint i = 0; i < layers[3]*layers[2]; i++)  { double val = InRange( 0, RAND_MAX_, -1, 1, rand()); layersWeghits3._vals << val;} //if(IsDebugPrintLevenbergExe) {Print(" W_All",  "   layersWeghits3.getAt(0, 0): ", layersWeghits3.getAt(0, 0), "  InRange: ", InRange( 0, RAND_MAX_, -10, 10, rand()) );  return;} //
+          if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_2_");//
+          //--------------------------------------------------------------------------------------------------
+          layersBias1   = new CMatirx_Vector<double>(layers[1], 1); layersBias1._vals.clear();;
+          layersBias2   = new CMatirx_Vector<double>(layers[2], 1); layersBias2._vals.clear();;
+          layersBias3   = new CMatirx_Vector<double>(layers[3], 1); layersBias3._vals.clear();
+          for(uint i = 0; i < layers[1]; i++)  { double val = InRange( 0, RAND_MAX_, -1, 1, rand()); layersBias1._vals << val;} if(IsDebugPrintLevenbergExe) {Print(" W_All",  "   layersBias1.getAt(0, 0): ", layersBias1.getAt(0, 0), "  InRange: ", InRange( 0, RAND_MAX_, -1, 1, rand()));}
+          for(uint i = 0; i < layers[2]; i++)  { double val = InRange( 0, RAND_MAX_, -1, 1, rand()); layersBias2._vals << val;} if(IsDebugPrintLevenbergExe) {Print(" W_All",  "   layersBias2.getAt(0, 0): ", layersBias2.getAt(0, 0), "  InRange: ", InRange( 0, RAND_MAX_, -1, 1, rand()) );}
+          for(uint i = 0; i < layers[3]; i++)  { double val = InRange( 0, RAND_MAX_, -1, 1, rand()); layersBias3._vals << val;} //if(IsDebugPrintLevenbergExe) {Print(" W_All",  "   layersBias3.getAt(0, 0): ", layersBias3.getAt(0, 0), "  InRange: ", InRange( 0, RAND_MAX_, -10, 10, rand()) );   return;} //
+          //--------------------------------------------------------------------------------------------------
+          CMatirx_Vector<double> o = MAT.Convert_VVtoMV(DataSetInput);
+          CMatirx_Vector<double> t = MAT.Convert_VVtoMV(DataSetTarget );
+          uint Epochs = 100;
+          CMatirx_Vector<double>        Jacobians               = MAT.zeros(DataSetInput.Total(), layers[1] * layers[0] + layers[2] * layers[1] + layers[3] * layers[2] );
+          CMatirx_Vector<double>        I_Weight                = MAT.eye(layers[1] * layers[0] + layers[2] * layers[1] + layers[3] * layers[2] );
+          //CMatirx_Vector<double> I_Weight("I_Weight", JacobianCalc_Mul._rows, JacobianCalc_Mul._cols);                                        Print(" I_Weight( I_Weight , n, n)");
+          double                        muAll                   = 0.000000005; //___BIG__GRAFIANTDECENT____LOW__NEUTONGAUS
+          CMatirx_Vector<double>        W_All                   = MAT.zeros(1, layers[1] * layers[0] + layers[2] * layers[1] + layers[3] * layers[2]); //one row
+          CMatirx_Vector<double>        Jacobians_Bias          = MAT.zeros(DataSetInput.Total(), layers[1] * layers[0] + layers[2] * layers[1] + layers[3] * layers[2] + layers[1] + layers[2] + layers[3]);
+          CMatirx_Vector<double>        I_Bias                  = MAT.eye(layers[1] * layers[0] + layers[2] * layers[1] + layers[3] * layers[2] + layers[1] + layers[2] + layers[3]);
+          CMatirx_Vector<double>        W_All_Bias              = MAT.zeros(1, layers[1] * layers[0] + layers[2] * layers[1] + layers[3] * layers[2] + layers[1] + layers[2] + layers[3]); //one row
+          //-----------------------------------------------------------------------------------------------------------
+          if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_3_", "W_All0.Size():", W_All.Size()); //
+          //
+          //CMatirx_Vector<double>        layersWeghits1V = MAT.reshape(layersWeghits1, layers[1] * layers[0], 1);
+          //W_All                                         = MAT.Seter(W_All, layersWeghits1V, 0, 1, 0, layers[1] * layers[0]);
+          //if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_4_", "W_All1.Size():", W_All.Size()); //
+          ////
+          //CMatirx_Vector<double>        layersWeghits2V = MAT.reshape(layersWeghits2, layers[2] * layers[1], 1);
+          //W_All                                         = MAT.Seter(W_All, layersWeghits2V, 0, 1, layers[1] * layers[0], layers[1] * layers[0] + layers[2] * layers[1] );
+          //if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_5_", "W_All2.Size():", W_All.Size()); //
+          ////
+          //CMatirx_Vector<double>        layersWeghits3V = MAT.reshape(layersWeghits3, layers[3] * layers[2], 1);
+          //W_All                                         = MAT.Seter(W_All, layersWeghits3V, 0, 1, layers[1] * layers[0] + layers[2] * layers[1], layers[1] * layers[0] + layers[2] * layers[1] + layers[3] * layers[2]);
+          //if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_6_", "W_All3.Size():", W_All.Size()); //
+          //-----------------------------------------------------------------------------------------------------------
+          //--withbias get
+          CMatirx_Vector<double>        layersWeghits1V         = MAT.reshape(layersWeghits1, layers[1] * layers[0], 1);
+          W_All_Bias                                            = MAT.Seter(W_All_Bias, layersWeghits1V, 0, 1, 0, layers[1] * layers[0]);
+          CMatirx_Vector<double>        layersBias1V            = MAT.reshape(layersBias1, layers[1], 1);
+          W_All_Bias                                            = MAT.Seter(W_All_Bias, layersBias1V, 0, 1, layers[1] * layers[0], layers[1] * layers[0] + layers[1] );
+          if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_4_", "W_All1.Size():", W_All.Size()); //
+          //
+          CMatirx_Vector<double>        layersWeghits2V         = MAT.reshape(layersWeghits2, layers[2] * layers[1], 1);
+          W_All_Bias                                            = MAT.Seter(W_All_Bias, layersWeghits2V, 0, 1, layers[1] * layers[0] + layers[1], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] );
+          CMatirx_Vector<double>        layersBias2V            = MAT.reshape(layersBias2, layers[2], 1);
+          W_All_Bias                                            = MAT.Seter(W_All_Bias, layersBias2V, 0, 1, layers[1] * layers[0] + layers[1] + layers[2] * layers[1], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2] );
+          if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_5_", "W_All2.Size():", W_All.Size()); //
+          //
+          CMatirx_Vector<double>        layersWeghits3V         = MAT.reshape(layersWeghits3, layers[3] * layers[2], 1);
+          W_All_Bias                                            = MAT.Seter(W_All_Bias, layersWeghits3V, 0, 1, layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2] + layers[3] * layers[2]);
+          CMatirx_Vector<double>        layersBias3V            = MAT.reshape(layersBias3, layers[3], 1);
+          W_All_Bias                                            = MAT.Seter(W_All_Bias, layersBias3V, 0, 1, layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2] + layers[3] * layers[2], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2] + layers[3] * layers[2] + layers[3] );
+          //W_All_Bias.Printer("W_All_Bias SetRandom          ");
+          //-----------------------------------------------------------------------------------------------------------
+          CMatirx_Vector<double>        I_Run = I_Bias;
+          //-----------------------------------------------------------------------------------------------------------
+          for(uint i = 0; i < Epochs; i++)
+          {         CMatirx_Vector<double> errorTrain = MAT.zeros(DataSetInput.Total(), 1);
+                    for(uint s = 0; s < m_Samples; s++)
+                    {         CMatirx_Vector<double> inputfeature = o[s];
+                              CMatirx_Vector<double> inputTargets = t[s];
+                              CMatirx_Vector<double> y1(1, n1);
+                              CMatirx_Vector<double> y2(1, n2);
+                              CMatirx_Vector<double> y3(1, n3);
+                              //
+                              feedforward(inputfeature, y1, y2, y3);
+                              //
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_7_", "0:", 0); //
+                              CMatirx_Vector<double> error = inputTargets - y3 ; //
+                              //DataSetResult[s].clear();
+                              //DataSetResult[s] << y3.getAt(0, 0); //
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_7.1_", "0:", 0,
+                                                                       "error.Size():", error.Size(), "  inputTargets.Size():", inputTargets.Size(), "  y3.Size():", y3.Size(), "  error.getAt(0,0)):", error.getAt(0, 0)); //
+                              errorTrain.setAt(s, 0, error.getAt(0, 0));//invert worked
+                              //Print("error.getAt(0, 0):", error.getAt(0, 0), "  s:", s);
+                              //error---errorTrain[s].setAt(0, 0, error.getAt(0, 0));
+                              //error---MAT.Seter(errorTrain, errorTrain[s], s, s + 1, 0, errorTrain[s].total());
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_8_", "0:", 0); //
+                              //CMatirx_Vector<double> d_f3(1, layers[3]);
+                              //for(uint d = 0; d < layers[3]; d++) { d_f3.setAt(0, d, DerivationRelu(y3.At(0, d))); }
+                              CMatirx_Vector<double> d_f3  = DerivationRelu(y3);
+                              if(IsDebugPrintLevenbergExe) {Print(" W_All",  "   d_f3.getAt(0, 0): ", d_f3.getAt(0, 0) );  return;} //
+                              //
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_9_", "0:", 0); //
+                              //CMatirx_Vector<double> d_f2(1, layers[2]);
+                              //for(uint d = 0; d < layers[2]; d++) { d_f2.setAt(0, d, DerivationSigmoid(y2.At(0, d))); }
+                              //Print(" W_All",  "   y2.getAt(0, 0): ", y2.getAt(0, 0) ); Sleep(1000); return; //
+                              CMatirx_Vector<double> d_f2               = DerivationSigmoid(y2); //Print(" W_All",  "   d_f2.getAt(0, 0): ", d_f2.getAt(0, 0),  "   d_f2.size(): ", d_f2.size() ); Sleep(1000); return; //
+                              CMatirx_Vector<double> diag_d_f2          = MAT.diagflat(d_f2);    //Print(" W_All",  "   diag_d_f2.getAt(0, 0): ", diag_d_f2.getAt(0, 0),  "   diag_d_f2.size(): ", diag_d_f2.size() ); Sleep(1000); return; //
+                              //Print(" W_All",  "   diag_d_f2.getAt(0, 0): ", diag_d_f2.getAt(0, 0) ); Sleep(1000); return; //
+                              //
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_10_", "diag_d_f2.Size():", diag_d_f2.Size(), "  d_f2.Size():", d_f2.Size()); //
+                              //CMatirx_Vector<double> d_f1(1, layers[1]);
+                              //for(uint d = 0; d < layers[1]; d++) { d_f1.setAt(0, d, DerivationRelu(y1.At(0, d))); }
+                              CMatirx_Vector<double> d_f1            = DerivationSigmoid(y1); //Print(" W_All",  "   d_f1.getAt(0, 0): ", d_f1.getAt(0, 0) ); Sleep(1000); return; //
+                              CMatirx_Vector<double> diag_d_f1       = MAT.diagflat(d_f1);    // Print(" W_All",  "   diag_d_f1.getAt(0, 0): ", diag_d_f1.getAt(0, 0) ); Sleep(1000); return; //
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_11_", "0:", 0); //
+                              //
+                              CMatirx_Vector<double> temp1  =  d_f3 * -1;    //Print(" W_All",  "   temp1.getAt(0, 0): ", temp1.getAt(0, 0) ); Sleep(1000); return; //
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_12_", "0:", 0,
+                                                                       "  d_f3.Size():", d_f3.Size(), "  temp1.Size():", temp1.Size(), "  layersWeghits3.Size():", layersWeghits3.Size()); //
+                              CMatirx_Vector<double> temp2  =  layersWeghits3 * temp1.getAt(0, 0); //1*1 . 1*4  //target is x*1
+                              //Print(" W_All",  "   layersWeghits3.getAt(0, 0): ", layersWeghits3.getAt(0, 0) ); Sleep(1000); return; //
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_13_", "0:", 0, "  temp2.Size():", temp2.Size()); //
+                              CMatirx_Vector<double> temp3  =  MAT.dot(temp2, diag_d_f2);
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_14_", "0:", 0); //
+                              CMatirx_Vector<double> temp4  =  MAT.dot(temp3, layersWeghits2);
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_15_", "0:", 0); //
+                              CMatirx_Vector<double> temp5  =  MAT.dot(temp4, diag_d_f1);
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_16_", "0:", 0); //
+                              CMatirx_Vector<double> temp5T =  temp5.T();
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_17_", "0:", 0, "  temp5T.Size():", temp5T.Size(), "  inputfeature.Size():", inputfeature.Size()); //
+                              CMatirx_Vector<double> temp6  =  MAT.dot(temp5T, inputfeature);
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_18_", "0:", 0, "  temp6.Size():", temp6.Size()); //
+                              //
+                              CMatirx_Vector<double> glayersWeghits1 = temp6; if(IsDebugPrintLevenbergExe) {Print(" W_All",  "   glayersWeghits1.getAt(s, 0):", glayersWeghits1.getAt(s, 0) ); return;} //
+                              CMatirx_Vector<double> glayersBias1 = temp5T;
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_19_", "0:", 0); //
+                              CMatirx_Vector<double> glayersWeghits2 = MAT.dot(temp3.T(), y1);
+                              CMatirx_Vector<double> glayersBias2 = temp3.T();
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_20_", "0:", 0); //
+                              CMatirx_Vector<double> glayersWeghits3 = MAT.dot(temp1.T(), y2);;
+                              CMatirx_Vector<double> glayersBias3 = temp1.T();
+                              //------------------------------------------------------------
+                              //--------JACOBIANS---------------
+                              if(IsDebugPrintLevenbergExe)Print(" W_All",  "   Jacobians.getAt(s, 0):", Jacobians.getAt(s, 0) ); //
+                              //
+                              //CMatirx_Vector<double>        glayersWeghits1V = MAT.reshape(glayersWeghits1, layers[1] * layers[0], 1);
+                              //Jacobians                                      = MAT.Seter(Jacobians, layersWeghits1V, s, s + 1, 0, layers[1] * layers[0]);
+                              //if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_4_", "W_All1.Size():", W_All.Size()); //
+                              ////
+                              //CMatirx_Vector<double>        glayersWeghits2V = MAT.reshape(glayersWeghits2, layers[2] * layers[1], 1);
+                              //Jacobians                                   = MAT.Seter(Jacobians, layersWeghits2V, s, s + 1, layers[1] * layers[0], layers[1] * layers[0] + layers[2] * layers[1] );
+                              //if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_5_", "W_All2.Size():", W_All.Size()); //
+                              ////
+                              //CMatirx_Vector<double>        glayersWeghits3V = MAT.reshape(glayersWeghits3, layers[3] * layers[2], 1);
+                              //Jacobians                                   = MAT.Seter(Jacobians, layersWeghits3V, s, s + 1, layers[1] * layers[0] + layers[2] * layers[1], layers[1] * layers[0] + layers[2] * layers[1] + layers[3] * layers[2]);
+                              //--------JACOBIANS-BIAS--------------
+                              CMatirx_Vector<double>        glayersWeghits1V            = MAT.reshape(glayersWeghits1, layers[1] * layers[0], 1);
+                              CMatirx_Vector<double>        glayersBias1V               = MAT.reshape(glayersBias1, layers[1], 1);
+                              Jacobians_Bias                                            = MAT.Seter(Jacobians_Bias, layersWeghits1V, s, s + 1, 0, layers[1] * layers[0]);
+                              Jacobians_Bias                                            = MAT.Seter(Jacobians_Bias, glayersBias1V, s, s + 1, layers[1] * layers[0], layers[1] * layers[0] + layers[1]);
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_4_", "W_All1.Size():", W_All.Size()); //
+                              //
+                              CMatirx_Vector<double>        glayersWeghits2V            = MAT.reshape(glayersWeghits2, layers[2] * layers[1], 1);
+                              CMatirx_Vector<double>        glayersBias2V               = MAT.reshape(glayersBias2, layers[2], 1);
+                              Jacobians_Bias                                            = MAT.Seter(Jacobians_Bias, layersWeghits2V, s, s + 1, layers[1] * layers[0] + layers[1], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] );
+                              Jacobians_Bias                                            = MAT.Seter(Jacobians_Bias, glayersBias2V, s, s + 1,  layers[1] * layers[0] + layers[1] + layers[2] * layers[1], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2]);
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_5_", "W_All2.Size():", W_All.Size()); //
+                              //
+                              CMatirx_Vector<double>        glayersWeghits3V            = MAT.reshape(glayersWeghits3, layers[3] * layers[2], 1);
+                              CMatirx_Vector<double>        glayersBias3V               = MAT.reshape(glayersBias3, layers[3], 1);
+                              Jacobians_Bias                                            = MAT.Seter(Jacobians_Bias, layersWeghits3V, s, s + 1, layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2]  + layers[3] * layers[2]);
+                              Jacobians_Bias                                            = MAT.Seter(Jacobians_Bias, glayersBias3V, s, s + 1, layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2]  + layers[3] * layers[2], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2]  + layers[3] * layers[2] + layers[3]);
+                              //
+                    } //
+                    if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_21_", "0:", 0, "errorTrain.Size():", errorTrain.Size()); //
+                    if(IsDebugPrintLevenbergExe)Print(" W_All",  "   errorTrain.T().dot(errorTrain).getAt(0, 0):", errorTrain.T().dot(errorTrain).getAt(0, 0) ); //
+                    double mu =  errorTrain.T().dot(errorTrain).getAt(0, 0) * muAll ;
+                    Print("muAll:", muAll, "  mu:", mu);
+                    if(IsDebugPrintLevenberg)Print(" errorTrain.T().dot(errorTrain).getAt(0, 0)", errorTrain.T().dot(errorTrain).getAt(0, 0), "  muAll:", muAll );
+                    if(IsDebugPrintLevenbergExe)Print(" W_All",  "   mu:", mu ); //
+                    CMatirx_Vector<double>        JacobianCalc            = Jacobians_Bias;                                                    if(IsDebugPrintLevenberg)Print(" JacobianCalc", "  mu:", mu);//
+                    if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_22_", "0:", 0, "  JacobianCalc.Size():", JacobianCalc.Size(), "     JacobianCalc.getRowSize():", JacobianCalc.getRowSize(), "     JacobianCalc.getColSize():", JacobianCalc.getColSize()); //
+                    if(IsDebugPrintLevenbergExe)Print(" W_All",  "   Jacobians.getAt(0, 0):", Jacobians.getAt(0, 0) ); //
+                    if(IsDebugPrintLevenbergExe)Print(" W_All",  "   JacobianCalc.getAt(0, 0):", JacobianCalc.getAt(0, 0) ); //
+                    CMatirx_Vector<double>        JacobianCalc_tran       = JacobianCalc.transpose();                                     if(IsDebugPrintLevenberg)Print(" JacobianCalc_tran");//
+                    if(IsDebugPrintLevenbergExe)Print(" W_All",  "   JacobianCalc_tran.getAt(0, 0):", JacobianCalc_tran.getAt(0, 0) ); //
+                    CMatirx_Vector<double>        JacobianCalc_Mul        = JacobianCalc_tran.multiply(JacobianCalc);                     if(IsDebugPrintLevenberg)Print(" JacobianCalc_Mul");
+                    if(IsDebugPrintLevenberg)Print(" JacobianCalc_Mul.getRowSize():", JacobianCalc_Mul.getRowSize(), "     JacobianCalc_Mul.getColSize():", JacobianCalc_Mul.getColSize(), "       JacobianCalc_Mul.size():", JacobianCalc_Mul.size());
+                    if(IsDebugPrintLevenberg)Print(" I_Run.getRowSize():", I_Run.getRowSize(), "     I_Run.getColSize():", I_Run.getColSize(), "       I_Run.size():", I_Run.size());
+                    CMatirx_Vector<double>        IdentifyMu              = I_Run * mu;                                                       if(IsDebugPrintLevenberg)Print(" Identify * Mu"); //
+                    //IdentifyMu.Printer("IdentifyMu          ");
+                    CMatirx_Vector<double>        JacobianCalcIdentifyMu  = JacobianCalc_Mul + IdentifyMu;                                if(IsDebugPrintLevenberg)Print(" JacobianCalc + IdentifyMu");//
+                    //JacobianCalcIdentifyMu.Printer("JacobianCalcIdentifyMu          ");
+                    if(IsDebugPrintLevenberg)Print(" JacobianCalcIdentifyMu.getRowSize():", JacobianCalcIdentifyMu.getRowSize(), "     JacobianCalcIdentifyMu.getColSize():", JacobianCalcIdentifyMu.getColSize(), "       JacobianCalcIdentifyMu.size():", JacobianCalcIdentifyMu.size());
+                    if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_22.1_", "0:", 0, "  JacobianCalcIdentifyMu.Size():", JacobianCalcIdentifyMu.Size()); //
+                    CMatirx_Vector<double>        HesianInvert            = JacobianCalcIdentifyMu.invert2();                             if(IsDebugPrintLevenberg)Print(" HesianInvert");//
+                    //HesianInvert.Printer("HesianInvert          ");
+                    CMatirx_Vector<double>        HesianJacobianT         = MAT.dot(HesianInvert, JacobianCalc_tran);                     if(IsDebugPrintLevenberg)Print(" HesianJacobianT");//
+                    CMatirx_Vector<double>        HesianJacobianTError    = MAT.dot(HesianJacobianT, errorTrain);                         if(IsDebugPrintLevenberg)Print(" HesianJacobianTError");//
+                    //HesianJacobianTError.Printer("HesianJacobianTError          ");
+                    if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_23_", "0:", 0,
+                                                             "  W_All_Bias.Size():", W_All_Bias.Size(), "  HesianJacobianTError.Size():", HesianJacobianTError.Size()
+                                                             , "     W_All_Bias.getRowSize():", W_All_Bias.getRowSize(), "     W_All_Bias.getColSize():", W_All_Bias.getColSize()
+                                                             , "     HesianJacobianTError.getRowSize():", HesianJacobianTError.getRowSize(), "     HesianJacobianTError.getColSize():", HesianJacobianTError.getColSize()
+                                                            ); //
+                    //-------------------------------------------------------------------------------------------------------------------------------------------------------
+                    if(IsDebugPrintLevenbergExe)Print(" W_All_Bias",  " before hessian W_All_Bias.getAt(0,0):", W_All_Bias.getAt(0, 0), "  HesianJacobianTError.T().getAt(0,0):", HesianJacobianTError.T().getAt(0, 0)); //
+                    W_All_Bias                                                 = W_All_Bias - (HesianJacobianTError.T() * 1.0);
+                    //W_All_Bias.Printer("W_All_Bias  Setupdate                        ");
+                    //HesianJacobianTError.T().Printer("HesianJacobianTError.T()  ");
+                    if(IsDebugPrintLevenberg)Print(" W_All",  "  W_All_Bias.getAt(0,0):", W_All_Bias.getAt(0, 0)); //
+                    if(IsDebugPrintLevenbergExe)Print(" W_All",  " affter hessian W_All_Bias.getAt(0,0):", W_All_Bias.getAt(0, 0)); //
+                    //-------------------------------------------------------------------------------------------------------------------------------------------------------
+                    if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_24_", "W_All_Bias.Size():", W_All_Bias.Size()); //
+                    //
+                    //layersWeghits1  = MAT.geter(W_All, 0, 1, 0, layers[1] * layers[0], layers[1], layers[0]);
+                    //if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_25_", "W_All1.Size():", layersWeghits1.Size()); //
+                    //layersWeghits2  = MAT.geter(W_All, 0, 1, layers[1] * layers[0], layers[1] * layers[0] + layers[2] * layers[1], layers[2], layers[1]);
+                    //if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_26_", "W_All2.Size():", W_All.Size()); //
+                    //layersWeghits3  = MAT.geter(W_All, 0, 1, layers[1] * layers[0] + layers[2] * layers[1], layers[1] * layers[0] + layers[2] * layers[1] + layers[3] * layers[2], layers[3], layers[2]);
+                    //-------------------------------------------------------------------------------------------------------------------------------------------------------
+                    delete layersWeghits1;
+                    delete layersBias1;
+                    delete layersWeghits2;
+                    delete layersBias2;
+                    delete layersWeghits3;
+                    delete layersBias3;
+                    //--withbias set
+                    layersWeghits1      = MAT.geter(W_All_Bias, 0, 1, 0, layers[1] * layers[0], layers[1], layers[0]); //layersWeghits1.Printer("layersWeghits1                          ");
+                    layersBias1         = MAT.geter(W_All_Bias, 0, 1, layers[1] * layers[0], layers[1] * layers[0] + layers[1], layers[1], 1); //layersBias1.Printer("layersBias1                          ");
+                    if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_25_", "W_All1.Size():", layersWeghits1.Size()); //
+                    layersWeghits2      = MAT.geter(W_All_Bias, 0, 1, layers[1] * layers[0] + layers[1], layers[1] * layers[0] + layers[1] + layers[2] * layers[1], layers[2], layers[1]);
+                    layersBias2         = MAT.geter(W_All_Bias, 0, 1, layers[1] * layers[0] + layers[1] + layers[2] * layers[1], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2], layers[2], 1);
+                    if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_26_", "W_All2.Size():", W_All.Size()); //
+                    layersWeghits3      = MAT.geter(W_All_Bias, 0, 1, layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2] + layers[3] * layers[2], layers[3], layers[2]);
+                    layersBias3         = MAT.geter(W_All_Bias, 0, 1, layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2] + layers[3] * layers[2], layers[1] * layers[0] + layers[1] + layers[2] * layers[1] + layers[2] + layers[3] * layers[2] + layers[3], layers[3], 1);
+                    //-------------------------------------------------------------------------------------------------------------------------------------------------------
+                    for(uint s = 0; s < m_Samples; s++)
+                    {         CMatirx_Vector<double> inputfeature = o[s];
+                              CMatirx_Vector<double> y1(1, n1);
+                              CMatirx_Vector<double> y2(1, n2);
+                              CMatirx_Vector<double> y3(1, n3);
+                              //
+                              feedforward(inputfeature, y1, y2, y3);
+                              //
+                              if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __Start_7_", "0:", 0); //
+                              DataSetResult[s].clear();
+                              DataSetResult[s] << y3.getAt(0, 0); //
+                    }
+                    //
+                    double MSE = calculateRMSE_Samples( "Levenberg");
+                    Print("__EPOCH__", i, "__MSE__", MSE, "__mu__", mu); //
+                    Draw(DataSetTargetTime, DataSetResult);//
+                    //Sleep(500);//
+          }
+          //backpropagation();
+          if(IsDebugPrintLevenberg)Print("COptimizer_Levenberg_Marquardt::TrainMatrix() __END__");//
+          //---------------
+}

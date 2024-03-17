@@ -1,0 +1,59 @@
+//+------------------------------------------------------------------+
+//| This file is free software; you can redistribute it and/or       |
+//| modify it under the terms of the GNU General Public License as   |
+//| published by the Free Software Foundation (www.fsf.org); either  |
+//| version 2 of the License, or (at your option) any later version. |
+//|                                                                  |
+//| This program is distributed in the hope that it will be useful,  |
+//| but WITHOUT ANY WARRANTY; without even the implied warranty of   |
+//| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the     |
+//| GNU General Public License for more details.                     |
+//+------------------------------------------------------------------+
+** ** ** ** ** **
+Hello!
+== == == == == == =
+    You can find more updates, completed libraries and includes in the
+    forum : 'https://www.mql5.com/en/forum/338341'
+
+    Program versions can be found in the 'Settings and Files' tab. All
+    scripts and EAs that were generated at various stages of this development
+    will be embeded there.
+
+    Feel free to share your opinions by contributing in the forum discussion;
+
+_______________________
+Success in your trading.
+//+------------------------------------------------------------------+
+//|                       UPDATE NOTES                               |
+//+------------------------------------------------------------------+
+/*
+      Training dataset
+      input1: [1.0,0.0,-1.0]   target1: [0.0]
+      input2: [0.0,1.0,1.0]    target2: [1.0]
+
+      Prediction dataset
+      input: [1.0,0.0,1.0]     expected: [1.0]
+*/
+//---
+
+version 1.10 => Posted on forum
+1. Created a neural network library to solve an xor problem.
+2. Created a sample script as an example of the program functions.
+3. link: https: '//www.mql5.com/en/forum/338341/page4#comment_17770620';
+
+version 1.20 => Posted and embedded as 'Script v1.20.ex5';
+1. Added a graphical representation of the training progress.
+2. Reduced console output to show final unseen prediction only.
+3. Better display of the prediction error as a percentage in console.
+
+version 1.30 => Embedded as 'Script v1.30';
+1. Added reLU, tanH and Sigmoid activation functions.
+2. Changed console output to show accuracy rather than error.
+3. You can choose different activation functions for hidden and output layers.
+4. A different data that was not part of the training dataset is used for prediction;
+5. Added network saving and loading functionalities.
+6. It was discovered that using sigmoid for hidden and tanH for output layers
+    produced much more accuracy and stability on the unforeseen data;
+7.
+
+//+------------------------------------------------------------------+
